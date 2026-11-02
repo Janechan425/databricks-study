@@ -46,7 +46,12 @@ flowchart LR
     subgraph Governance["Governance"]
         UC["Unity Catalog"]
         Policy["Access Control"]
+        Lineage["Data Lineage"]
         Audit["Auditing"]
+
+        UC --> Policy
+        UC --> Lineage
+        UC --> Audit
     end
 
     subgraph Compute["Compute Engines"]
@@ -63,9 +68,6 @@ flowchart LR
     G --> SQL
     G --> Analytics
     G --> ML
-    UC --> Governance
-    Policy --> Governance
-    Audit --> Governance
 ```
 
 ## Data Warehouse vs Data Lake vs Lakehouse
