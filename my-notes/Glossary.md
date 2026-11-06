@@ -111,3 +111,39 @@
 - **RocksDB vs checkpoint:** RocksDB is a state-store engine; checkpoint is the broader recovery/progress location.
 - **Shallow vs deep clone:** references source data files vs copies data files.
 - **UC vs DBFS:** governance and securables vs legacy filesystem abstraction.
+
+## Additional ingestion terms — schema, discovery, JDBC, and nested data
+
+| Term | Definition | Source |
+| --- | --- | --- |
+| `Schema inference` | Automatic discovery of initial column names and data types from source files; Auto Loader persists inferred schemas at schemaLocation. | [Docs](https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema) |
+| `cloudFiles.inferColumnTypes` | Auto Loader option to infer specific types for JSON/CSV/XML rather than treating inferred columns as strings. | [Docs](https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema) |
+| `cloudFiles.schemaLocation` | Path storing Auto Loader's inferred schema and schema evolution history. | [Docs](https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema) |
+| `cloudFiles.schemaEvolutionMode` | Controls Auto Loader's response to new source columns: addNewColumns, addNewColumnsWithTypeWidening, rescue, failOnNewColumns, or none. | [Docs](https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema) |
+| `UnknownFieldException` | Auto Loader exception on an unexpected new field in addNewColumns mode; restart after its tracked schema updates. | [Docs](https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema) |
+| `_rescued_data` | Column containing unexpected or mismatched source fields when rescued data handling is enabled. | [Docs](https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema) |
+| `Directory listing` | Auto Loader file discovery mode that lists source directories to find new files. | [Docs](https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/) |
+| `File notification` | Auto Loader discovery using cloud storage event notifications and queue infrastructure. | [Docs](https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/file-notification-mode) |
+| `Managed file events` | Unity Catalog-based, Databricks-managed file-event discovery for supported Auto Loader workloads. | [Docs](https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/) |
+| `Queue service` | Messaging infrastructure (e.g. Azure Queue Storage or Amazon SQS) storing event notifications; does not itself start a Databricks Job. | [Docs](https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/file-notification-mode) |
+| `Event Grid` | Azure service routing storage events such as BlobCreated to downstream handlers or queues. | [Docs](https://learn.microsoft.com/en-us/azure/event-grid/overview) |
+| `REST` | Representational State Transfer: API architectural style commonly implemented over HTTP, not a wire protocol itself. | [Docs](https://www.rfc-editor.org/rfc/rfc9110) |
+| `JDBC driver` | Implementation of JDBC database access that communicates using a database-specific protocol. | [Docs](https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html) |
+| `dbtable` | Spark JDBC option specifying a source database table or aliased subquery; supports partitioned reads. | [Docs](https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html) |
+| `partitionColumn` | Spark JDBC option naming the column used to partition parallel reads. | [Docs](https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html) |
+| `lowerBound / upperBound` | Spark JDBC partition stride bounds; not filters excluding out-of-range rows. | [Docs](https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html) |
+| `numPartitions` | Spark JDBC setting for number of read partitions and maximum concurrent JDBC connections. | [Docs](https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html) |
+| `fetchSize` | JDBC fetch batch size, not a total row limit. | [Docs](https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html) |
+| `dbutils` | Databricks Utilities APIs for secrets, filesystem operations, notebook widgets, and workflow helpers. | [Docs](https://docs.databricks.com/aws/en/dev-tools/databricks-utils) |
+| `Secret scope` | Named group of secrets retrievable with Databricks utilities, used for credentials and tokens. | [Docs](https://docs.databricks.com/aws/en/security/secrets/) |
+| `Watermark (incremental extraction)` | Last-seen value (often updated_at) used to extract only newer/changed source rows; deletes may be missed. | [Docs](https://docs.databricks.com/aws/en/ingestion/) |
+| `Struct` | Spark complex data type containing named fields; access nested fields with dot notation. | [Docs](https://spark.apache.org/docs/latest/sql-ref-datatypes.html) |
+| `Array` | Spark complex data type containing ordered elements; often used for JSON lists. | [Docs](https://spark.apache.org/docs/latest/sql-ref-datatypes.html) |
+| `explode()` | PySpark function expanding each array element into a separate row; null/empty arrays produce no rows. | [Docs](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.explode.html) |
+| `explode_outer()` | Like explode(), but preserves a row with a null expanded value for null/empty arrays. | [Docs](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.explode_outer.html) |
+
+### Example: explode vs explode_outer
+
+Input: `order_id=101, items=[A001, B002]` → `explode(items)` produces **two rows**: `101 | A001` and `101 | B002`. For `items=[]` or `items=NULL`, `explode` produces **zero rows**, whereas `explode_outer` produces **one row with NULL**.
+
+See [Data Ingestion Follow-up Q&A](./Data-Ingestion-Follow-up-QA.md) for examples and exam comparisons.
