@@ -557,7 +557,7 @@ Cached data is distributed on Executors (memory/disk), unlike `collect()` which 
 
 ## Related Topics
 
-- [Advanced Transformations — Expanded Study Notes and FAQ](./04-advanced-transformations-study-notes.md)
+- [My Notes: Advanced Transformations FAQ](../../../my-notes/03-advanced-transformations.md)
 - [Joins and Aggregations](./03-joins-aggregations.md)
 - [PySpark API Quick Reference](../../../shared/cheat-sheets/pyspark-api-quick-ref.md)
 - [Python Patterns (Code Examples)](../../../shared/code-examples/python/python_patterns.md)
