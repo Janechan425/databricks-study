@@ -208,6 +208,10 @@ spark.conf.set("spark.sql.shuffle.partitions", "auto"); timed("auto partitions",
 - Serverless exposes only a handful of Spark properties, and `spark.sql.shuffle.partitions` is one of them
 - Tune from Spark UI evidence, change one setting at a time, and re-measure
 
+## Personal Study Notes
+
+- [Spark tuning, AQE, salting and performance FAQ](../../../my-notes/03-07-spark-tuning-aqe.md)
+
 ## Related Topics
 
 - [Joins and Aggregations](./03-joins-aggregations.md)
