@@ -4,8 +4,22 @@ Personal study notes for the Databricks Certified Data Engineer Associate exam. 
 
 ## Notes
 
+### Domain 3 — Data Transformation and Modeling (first pass complete)
+
+| Section | Study note |
+|---|---|
+| 01–02 Spark SQL and DataFrames | [SQL, DataFrame, CTE/CTAS, windows and actions](./03-01-02-sql-dataframes.md) |
+| 03 Joins and Aggregations | [Joins, broadcast vs sort-merge, deduplication](./03-03-joins-aggregations.md) |
+| 04 Advanced Transformations | [Overview/index](./03-advanced-transformations.md) |
+| 04A Collections and Pivot | [Arrays, maps, structs, explode, pivot](./03-04-collections-and-pivot.md) |
+| 04B NULL, JSON and UDFs | [NULL/NaN, forward fill, JSON, cache, UDFs](./03-04-null-json-udf.md) |
+| 05 Cleaning and Quality | [Bronze to Silver, profiling, expectations, quarantine](./03-05-cleaning-quality.md) |
+| 06 Gold Layer Objects | [Table/View/MV/ST, CDC, AUTO CDC, dbt](./03-06-gold-cdc-dbt.md) |
+| 07 Spark Tuning | [JVM/RDD/GC, partitions, joins, AQE, salting, Spark UI](./03-07-spark-tuning-aqe.md) |
+
+### Other references
+
 - [Glossary](Glossary.md) — Terms and concise explanations.
-- [03 — Advanced Transformations](03-advanced-transformations.md) — Personal FAQ, worked examples, and exam review of arrays, maps, pivot, nulls, UDFs, JSON, and caching.
 - [Synapse vs Databricks](Synapse-vs-Databricks.md) — Concepts and migration comparisons.
 - [Mistakes](Mistakes.md) — Practice-question corrections and review points.
 
