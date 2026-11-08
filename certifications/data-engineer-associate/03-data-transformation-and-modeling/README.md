@@ -59,6 +59,17 @@ flowchart TD
 - **Gold objects**: a **view** recomputes on every query; a **materialized view** stores precomputed results and refreshes; a **streaming table** appends new data incrementally
 - **Expectations**: `CONSTRAINT ... EXPECT (...)` with warn (default), `DROP ROW`, or `FAIL UPDATE`
 
+## Personal Study Notes
+
+All seven sections were discussed in the first study pass. [Study notes index](../../../my-notes/README.md):
+
+- [01–02 SQL and DataFrames](../../../my-notes/03-01-02-sql-dataframes.md)
+- [03 Joins and Aggregations](../../../my-notes/03-03-joins-aggregations.md)
+- [04 Advanced Transformations overview](../../../my-notes/03-advanced-transformations.md) · [Collections/Pivot](../../../my-notes/03-04-collections-and-pivot.md) · [NULL/JSON/UDF](../../../my-notes/03-04-null-json-udf.md)
+- [05 Data Cleaning and Quality](../../../my-notes/03-05-cleaning-quality.md)
+- [06 Gold Objects, AUTO CDC and dbt](../../../my-notes/03-06-gold-cdc-dbt.md)
+- [07 Spark Tuning, AQE and Salting](../../../my-notes/03-07-spark-tuning-aqe.md)
+
 ## Related Resources
 
 - [Spark Fundamentals](../../../shared/fundamentals/spark-fundamentals.md)
