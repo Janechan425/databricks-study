@@ -128,7 +128,7 @@ Before starting this certification, review:
 
 ### Phase 2: Transformation and orchestration
 
-- [ ] 03 — Data Transformation and Modeling (cleaning, joins, Gold layer objects, data quality, tuning)
+- [x] 03 — Data Transformation and Modeling (first pass and Q&A notes complete; hands-on and mock exams pending)- [ ] 03 — Data Transformation and Modeling (cleaning, joins, Gold layer objects, data quality, tuning)
 - [ ] 04 — Working with Lakeflow Jobs (tasks, control flow, triggers)
 
 ### Phase 3: Production readiness
