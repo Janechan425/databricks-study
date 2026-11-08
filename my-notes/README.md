@@ -5,6 +5,7 @@ Personal study notes for the Databricks Certified Data Engineer Associate exam. 
 ## Notes
 
 - [Glossary](Glossary.md) — Terms and concise explanations.
+- [03 — Advanced Transformations](03-advanced-transformations.md) — Personal FAQ, worked examples, and exam review of arrays, maps, pivot, nulls, UDFs, JSON, and caching.
 - [Synapse vs Databricks](Synapse-vs-Databricks.md) — Concepts and migration comparisons.
 - [Mistakes](Mistakes.md) — Practice-question corrections and review points.
 
