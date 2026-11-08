@@ -278,6 +278,10 @@ Schema enforcement (Delta rejecting writes whose columns or types don't match th
 - Expectation metrics live in the pipeline's Data quality tab and event log
 - Quarantine tables keep bad records visible instead of dropping them
 
+## Personal Study Notes
+
+- [Cleaning, validation, expectations and quarantine FAQ](../../../my-notes/03-05-cleaning-quality.md)
+
 ## Related Topics
 
 - [DataFrame Operations](./02-dataframe-operations.md)
