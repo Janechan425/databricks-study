@@ -253,6 +253,10 @@ GRANT REFRESH ON main.gold.mv_revenue_by_region TO `reporting-sp`;   -- syntax p
 - Streaming tables give incremental, append-only maintenance with low latency
 - All four are Unity Catalog objects governed by the same privilege model
 
+## Personal Study Notes
+
+- [Gold objects, AUTO CDC and dbt FAQ](../../../my-notes/03-06-gold-cdc-dbt.md)
+
 ## Related Topics
 
 - [Data Cleaning and Data Quality](./05-data-cleaning-and-quality.md)
