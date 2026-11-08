@@ -38,6 +38,8 @@ from pyspark.sql.types import StringType, IntegerType
 # Simple Python UDF
 
 def categorize_salary(salary):
+    if salary is None:
+        return None
     if salary < 50000:
         return "Entry"
     elif salary < 100000:
@@ -58,7 +60,7 @@ df_categorized = (employees
 
 ### Pandas UDFs (Vectorized)
 
-Pandas UDFs are faster than regular Python UDFs because they operate on batches:
+Pandas UDFs **often** outperform regular row-at-a-time Python UDFs: Apache Arrow transfers columnar batches between Spark/JVM and Python, and each call processes a Pandas Series. Vectorization and lower per-row overhead help, but speedups depend on the workload. Prefer Spark built-in expressions when possible:
 
 ```python
 from pyspark.sql.functions import pandas_udf
@@ -67,11 +69,11 @@ import pandas as pd
 @pandas_udf("string")
 def categorize_salary_pandas(salary_series: pd.Series) -> pd.Series:
     """Vectorized UDF - processes entire batch at once"""
-    return pd.cut(
-        salary_series,
-        bins=[0, 50000, 100000, float('inf')],
-        labels=['Entry', 'Mid', 'Senior']
-    )
+    result = pd.Series(pd.NA, index=salary_series.index, dtype="string")
+    result.loc[salary_series < 50000] = "Entry"
+    result.loc[(salary_series >= 50000) & (salary_series < 100000)] = "Mid"
+    result.loc[salary_series >= 100000] = "Senior"
+    return result
 
 df_categorized = (employees
     .withColumn("level", categorize_salary_pandas(col("salary")))
@@ -212,32 +214,30 @@ df_collected = (employees
 
 ### Maps
 
-```python
-from pyspark.sql.functions import create_map, map_keys, map_values
+A Map has key/value pairs. All map values must use a **compatible type**. `lit("salary")` is the constant key `"salary"`; `col("salary")` reads each row's salary. Because salary is numeric and department is a string, convert salary to a string in this example:
 
-# Create map
+```python
+from pyspark.sql import functions as F
 
 df_map = employees.select(
-    col("name"),
-    create_map(
-        lit("salary"), col("salary"),
-        lit("department"), col("department")
+    "name",
+    F.create_map(
+        F.lit("salary"), F.col("salary").cast("string"),
+        F.lit("department"), F.col("department")
     ).alias("info")
 )
 
-# Access map values
-
-df_accessed = (employees
-    .withColumn("dept", col("info")["department"])
-    .withColumn("sal", col("info")["salary"])
+# Work with df_map: employees itself does not contain an "info" column.
+df_accessed = (df_map
+    .withColumn("dept", F.col("info")["department"])
+    .withColumn("sal", F.col("info")["salary"])
 )
-
-# Explode map into key-value rows
-
-df_exploded = (employees
-    .selectExpr("name", "explode(info) as (key, value)")
-)
+df_exploded = df_map.selectExpr("name", "explode(info) AS (key, value)")
+df_keys = df_map.select(F.map_keys("info").alias("keys"))
+df_values = df_map.select(F.map_values("info").alias("values"))
 ```
+
+For `Alice, salary=85000, department=IT`, `info` is `{"salary":"85000","department":"IT"}`. Map indexing `info["department"]` returns `IT`; `explode(info)` returns two rows (`salary,85000` and `department,IT`). Iteration order is not guaranteed. For fixed heterogeneous fields (numeric salary + string department), a **Struct** is generally preferable.
 
 ### Structs
 
@@ -257,7 +257,7 @@ df_struct = employees.select(
 
 # Access struct fields
 
-df_accessed = (employees
+df_accessed = (df_struct
     .withColumn("emp_name", col("employee_info.full_name"))
     .withColumn("emp_sal", col("employee_info.annual_salary"))
 )
@@ -331,6 +331,15 @@ df_coalesce = (employees
 
 ## Flattening nested structures
 
+**Array of Structs example:** `addresses` has type `ARRAY<STRUCT<street: STRING,city: STRING>>`. If Alice has two addresses, `explode(addresses)` creates two Alice rows, each with a single address Struct; the next `select` extracts `address.street` and `address.city`.
+
+| name | address.street | address.city |
+|---|---|---|
+| Alice | King St | Toronto |
+| Alice | Queen St | Kingston |
+
+`explode` skips empty and null arrays; use `explode_outer` to preserve the row with a null result.
+
 ```python
 # Unnest array column
 
@@ -355,24 +364,50 @@ df_flattened = (employees
 
 ### Pivot to Columns
 
+`PIVOT` turns distinct row values into columns, then aggregates the corresponding values. For example, 2024 Engineering salaries `80000` and `90000` become `eng = 170000` on the 2024 row.
+
 ```sql
+-- Project only year, department and salary first.
+-- Otherwise columns such as employee id/name become implicit grouping keys.
 SELECT *
-FROM employees
+FROM (SELECT year, department, salary FROM employees)
 PIVOT (
     SUM(salary)
-    FOR department IN ('Engineering' as eng, 'Sales' as sales, 'HR' as hr)
-)
+    FOR department IN ('Engineering' AS eng, 'Sales' AS sales, 'HR' AS hr)
+);
 ```
 
 ```python
 df_pivoted = (employees
-    .groupBy("year")
-    .pivot("department", ["Engineering", "Sales", "HR"])
-    .agg(F.sum("salary"))
+    .groupBy("year")  # output rows
+    .pivot("department", ["Engineering", "Sales", "HR"])  # output columns
+    .agg(F.sum("salary"))  # value per year and department
 )
 ```
 
+Without `PIVOT`, familiar SQL conditional aggregation gives the same layout:
+
+```sql
+SELECT year,
+    SUM(CASE WHEN department = 'Engineering' THEN salary END) AS eng,
+    SUM(CASE WHEN department = 'Sales' THEN salary END) AS sales,
+    SUM(CASE WHEN department = 'HR' THEN salary END) AS hr
+FROM employees
+GROUP BY year;
+```
+
+`AS eng` is a column **alias**. Omitting `ELSE 0` preserves NULL for a year with no matching department, as in the PIVOT example.
+
 ## Null Handling
+
+`NULL` = missing/unknown; `NaN` = special floating-point Not a Number. `isnull(NULL)` is true but `isnan(NULL)` is false. `isnull(NaN)` is false but `isnan(NaN)` is true.
+
+| Need | T-SQL / Synapse | Spark SQL | PySpark |
+|---|---|---|---|
+| Check NULL | `salary IS NULL` | `salary IS NULL` | `F.isnull("salary")` |
+| Replace NULL | `ISNULL(salary, 0)` | `COALESCE(salary, 0)` | `df.fillna({"salary": 0})` |
+
+Unlike PySpark `isnull`, T-SQL's `ISNULL(value, replacement)` **replaces** NULL. `fillna` also replaces floating-point NaN; it does not clean empty strings automatically.
 
 ```python
 from pyspark.sql.functions import isnan, isnull, col   # fillna/dropna are DataFrame methods
@@ -400,7 +435,11 @@ df_filled = (employees
 
 # Fill nulls with forward fill
 
-window_fill = Window.orderBy(col("hire_date"))
+# Forward fill ordered salaries: [80000, NULL, NULL, 95000, NULL]
+# → [80000, 80000, 80000, 95000, 95000]
+# Add partitionBy("employee_id") for employee-specific histories.
+# Include a tie-breaker if hire_date values repeat.
+window_fill = Window.orderBy(col("hire_date"), col("id"))
 df_forward_filled = employees.withColumn(
     "salary",
     F.last(col("salary"), ignoringNulls=True).over(
@@ -408,6 +447,22 @@ df_forward_filled = employees.withColumn(
     )
 )
 ```
+
+### Parse JSON strings with `from_json`
+
+`from_json` parses a **JSON string column** into a typed Struct, Array or Map using the supplied schema. It differs from `spark.read.json(path)`, which reads a JSON data source.
+
+```python
+# json_data = '{"name":"Alice","age":30}'
+df_parsed = df.withColumn(
+    "parsed",
+    F.from_json("json_data", "name STRING, age INT")
+)
+df_flat = df_parsed.select("parsed.name", "parsed.age")
+# Reverse: F.to_json("parsed")
+```
+
+In permissive parsing, malformed JSON typically results in a null result; missing fields become null.
 
 ## Performance Considerations
 
@@ -434,17 +489,22 @@ result = df1.join(df2, df1.key == df2.key)
 # Cache frequently used DataFrames
 
 df_cleaned = df.filter(col("sales") > 100)
-df_cleaned.cache()
+df_cleaned.cache()  # lazy: marks a result for caching
+df_cleaned.count()  # first action: execute and populate distributed cache
 
 # Use it multiple times
 
 result1 = df_cleaned.select("name", "sales")
 result2 = df_cleaned.filter(col("sales") > 500)
+result1.show()  # actions reuse the cached intermediate result
+result2.show()
 
 # Remove from cache
 
-df_cleaned.unpersist()
+df_cleaned.unpersist()  # releases cached blocks; does NOT delete source data
 ```
+
+Cached data is distributed on Executors (memory/disk), unlike `collect()` which transfers all rows to the Driver. Cache is temporary, not a persistent Delta checkpoint. Cache only costly intermediate results reused by multiple actions.
 
 ## UDF vs Built-in Functions
 
@@ -480,7 +540,7 @@ df_cleaned.unpersist()
 ## Exam Tips
 
 - Always prefer built-in Spark functions over UDFs; UDFs bypass Catalyst optimization and are slower
-- Pandas UDFs (vectorized) are significantly faster than regular Python UDFs because they process batches
+- Pandas UDFs use Arrow batches and Pandas Series and are often faster than regular UDFs; performance is workload-dependent. Built-in Spark expressions are generally the preferred starting point
 - Know the difference between `ROW_NUMBER()`, `RANK()`, and `DENSE_RANK()` -- especially how they handle ties
 - `explode()` converts an array column into multiple rows; this is a common exam question pattern
 
@@ -497,6 +557,7 @@ df_cleaned.unpersist()
 
 ## Related Topics
 
+- [Advanced Transformations — Expanded Study Notes and FAQ](./04-advanced-transformations-study-notes.md)
 - [Joins and Aggregations](./03-joins-aggregations.md)
 - [PySpark API Quick Reference](../../../shared/cheat-sheets/pyspark-api-quick-ref.md)
 - [Python Patterns (Code Examples)](../../../shared/code-examples/python/python_patterns.md)
