@@ -147,3 +147,50 @@
 Input: `order_id=101, items=[A001, B002]` → `explode(items)` produces **two rows**: `101 | A001` and `101 | B002`. For `items=[]` or `items=NULL`, `explode` produces **zero rows**, whereas `explode_outer` produces **one row with NULL**.
 
 See [Data Ingestion Follow-up Q&A](./Data-Ingestion-Follow-up-QA.md) for examples and exam comparisons.
+
+## Domain 6 — Monitoring, Optimization and Troubleshooting
+
+| Term | Definition | Source |
+| --- | --- | --- |
+| Job run | One execution instance of a Lakeflow Job. | [Jobs](https://docs.databricks.com/aws/en/jobs/) |
+| Task dependency / upstream failure | A downstream task depends on successful or configured completion of an upstream task. | [Jobs](https://docs.databricks.com/aws/en/jobs/) |
+| Repair run | Retry failed or skipped tasks of an existing job run where supported. | [Jobs](https://docs.databricks.com/aws/en/jobs/) |
+| Job Matrix view | Jobs UI view for comparing task performance/status across runs. | [Jobs](https://docs.databricks.com/aws/en/jobs/) |
+| Spark UI | Spark execution diagnostics for jobs, stages, tasks, executors, storage and SQL plans. | [Spark UI](https://docs.databricks.com/aws/en/optimizations/spark-ui-guide) |
+| Query Profile | SQL query execution/operator diagnostics, especially for SQL warehouses. | [Query Profile](https://docs.databricks.com/aws/en/sql/user/queries/query-profile) |
+| System tables | Databricks-provided tables for operational, billing, audit and lineage data. | [System Tables](https://docs.databricks.com/aws/en/admin/system-tables/) |
+| Dynamic Management View (DMV) | Synapse/SQL Server diagnostic views for requests and engine state; `dm_pdw_*` refers to Parallel Data Warehouse. | [Synapse](https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/sql-data-warehouse-manage-monitor) |
+| Distributed aggregation | Parallel partial aggregations followed by combining intermediate results. | [Spark](https://spark.apache.org/docs/latest/sql-performance-tuning.html) |
+| Shuffle | Redistribution of data between Spark partitions, often for joins or aggregations. | [Spark](https://spark.apache.org/docs/latest/sql-performance-tuning.html) |
+| Spill | Writing intermediate task data to disk when memory is insufficient. | [Spark](https://spark.apache.org/docs/latest/web-ui.html) |
+| Data skew | Uneven data distribution causing some partitions/tasks to process much more than others. | [Spark](https://spark.apache.org/docs/latest/sql-performance-tuning.html) |
+| Salting | Add a synthetic key component to split hot keys across aggregation/join tasks. | [Spark](https://spark.apache.org/docs/latest/sql-performance-tuning.html) |
+| AQE | Adaptive Query Execution; runtime plan adaptation such as coalescing partitions and skewed join handling. | [Spark](https://spark.apache.org/docs/latest/sql-performance-tuning.html) |
+| High cardinality | Column with many distinct values; not synonymous with skew. | [Notes](./06-troubleshooting-monitoring-optimization.md) |
+| Low cardinality | Column with relatively few distinct values. | [Notes](./06-troubleshooting-monitoring-optimization.md) |
+| Cardinality ratio | Distinct-value count divided by row count; a context-dependent descriptive metric. | [Notes](./06-troubleshooting-monitoring-optimization.md) |
+| Z-order Curve | Space-filling ordering that interleaves coordinate bits to improve multidimensional locality. | [Delta](https://docs.databricks.com/aws/en/delta/data-skipping) |
+| Bit interleaving | Alternating bits from multiple dimensions to form a sortable one-dimensional key. | [Notes](./06-troubleshooting-monitoring-optimization.md) |
+| Z-ORDER | Delta file-layout optimization for data colocation and effective data skipping on eligible tables. | [Delta](https://docs.databricks.com/aws/en/delta/data-skipping) |
+| Data skipping / file pruning | Avoid reading files whose statistics show they cannot satisfy a filter. | [Delta](https://docs.databricks.com/aws/en/delta/data-skipping) |
+| OPTIMIZE | Delta maintenance command for compaction and supported data layout optimization. | [OPTIMIZE](https://docs.databricks.com/aws/en/sql/language-manual/delta-optimize) |
+| Compaction | Rewriting many small data files into fewer, larger files. | [OPTIMIZE](https://docs.databricks.com/aws/en/delta/optimize) |
+| ANALYZE TABLE | Collect or update statistics used by the query optimizer. | [ANALYZE](https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-analyze-table) |
+| Table statistics | Row counts, sizes or column statistics supporting query planning. | [ANALYZE](https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-analyze-table) |
+| Optimized Writes | Write-time file-size/distribution optimization. | [Delta](https://docs.databricks.com/aws/en/delta/tune-file-size) |
+| Auto Compaction | Automatic compaction of small files after writes under supported conditions. | [Delta](https://docs.databricks.com/aws/en/delta/tune-file-size) |
+| Bloom filter | Probabilistic membership structure that may produce false positives but not false negatives. | [Delta](https://docs.databricks.com/aws/en/optimizations/bloom-filters) |
+| Liquid Clustering | Flexible table data layout using up to four clustering keys, replacing traditional partitioning/Z-ORDER on the table. | [Clustering](https://docs.databricks.com/aws/en/delta/clustering) |
+| Clustering key | Column used to organize related records for data skipping. | [Clustering](https://docs.databricks.com/aws/en/delta/clustering) |
+| OPTIMIZE FULL | Recluster all eligible historical data using current liquid clustering keys on supported runtimes. | [Clustering](https://docs.databricks.com/aws/en/delta/clustering) |
+| CLUSTER BY AUTO | Automatically select and evolve clustering keys; requires predictive optimization. | [Clustering](https://docs.databricks.com/aws/en/delta/clustering) |
+| Predictive Optimization | Automated OPTIMIZE, VACUUM and ANALYZE for supported Unity Catalog managed tables. | [Predictive](https://docs.databricks.com/aws/en/optimizations/predictive-optimization) |
+| INHERIT PREDICTIVE OPTIMIZATION | Revert table/schema predictive optimization behavior to the parent setting. | [Predictive](https://docs.databricks.com/aws/en/optimizations/predictive-optimization) |
+| Compute Event Log | Cluster lifecycle events and termination reasons used for startup diagnostics. | [Compute](https://docs.databricks.com/aws/en/compute/clusters-manage) |
+| Init script | Script executed during classic compute startup; failure can terminate cluster startup. | [Compute](https://docs.databricks.com/aws/en/init-scripts/) |
+| Library precedence | Python package/import priority; notebook-scoped libraries generally override compute-scoped and runtime built-ins. | [Libraries](https://docs.databricks.com/aws/en/libraries/) |
+| Version pinning | Specify exact package versions (e.g. pandas==2.2.2) for reproducibility. | [Libraries](https://docs.databricks.com/aws/en/libraries/) |
+| Driver OOM | Driver out-of-memory, often from collecting too much data locally. | [Notes](./06-troubleshooting-monitoring-optimization.md) |
+| Executor OOM | Executor out-of-memory, often from large partitions, skew or cached data. | [Notes](./06-troubleshooting-monitoring-optimization.md) |
+| Python Worker OOM | Python worker memory exhaustion, often from oversized UDF batches/groups. | [Notes](./06-troubleshooting-monitoring-optimization.md) |
+
