@@ -17,6 +17,12 @@ Personal study notes for the Databricks Certified Data Engineer Associate exam. 
 | 06 Gold Layer Objects | [Table/View/MV/ST, CDC, AUTO CDC, dbt](./03-06-gold-cdc-dbt.md) |
 | 07 Spark Tuning | [JVM/RDD/GC, partitions, joins, AQE, salting, Spark UI](./03-07-spark-tuning-aqe.md) |
 
+### Domain 6 — Troubleshooting, Monitoring and Optimization (first pass complete)
+
+| Section | Study note |
+|---|---|
+| 01–05 Job monitoring, Spark UI, Delta optimization, liquid clustering, predictive optimization and compute troubleshooting | [Domain 6 complete notes, Q&A and exam traps](./06-troubleshooting-monitoring-optimization.md) |
+
 ### Other references
 
 - [Glossary](Glossary.md) — Terms and concise explanations.
