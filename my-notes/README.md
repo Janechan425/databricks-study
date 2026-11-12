@@ -1,37 +1,22 @@
 # My Databricks Learning Notes
 
-Personal study notes for the Databricks Certified Data Engineer Associate exam. The original course materials remain unchanged.
+Personal, concept-grouped notes for Databricks Certified Data Engineer Associate. **One Markdown file per studied chapter** (source course files remain unchanged).
 
-## Notes
+| Domain | Consolidated note | Status |
+|---|---|---|
+| 1 — Intelligence Platform | [01 — Platform, Delta, UC, compute and time travel](./01-databricks-intelligence-platform.md) | Consolidated from prior Q&A |
+| 2 — Data Ingestion and Loading | [02 — Ingestion, Auto Loader, JDBC, CDC, schema](./02-data-ingestion-and-loading.md) | Consolidated from prior Q&A |
+| 3 — Data Transformation and Modeling | [03 — SQL/DataFrames, quality, Gold, Spark tuning](./03-data-transformation-and-modeling.md) | All prior section examples merged |
+| 4 — Working with Lakeflow Jobs | [04 — Jobs, triggers, task values and control flow](./04-working-with-lakeflow-jobs.md) | New chapter synthesis |
+| 5 — Implementing CI/CD | [05 — Git Folders, rebase, bundles, dbt, GitHub Actions](./05-implementing-cicd.md) | New chapter synthesis |
+| 6 — Troubleshooting, Monitoring and Optimization | [06 — Monitoring and optimization](./06-troubleshooting-monitoring-optimization.md) | Existing consolidated note |
+| 7 — Governance and Security | In progress (not yet consolidated) | Studying |
 
-### Domain 3 — Data Transformation and Modeling (first pass complete)
+## References
+- [Glossary](./Glossary.md)
+- [Synapse vs Databricks](./Synapse-vs-Databricks.md)
+- [Mistakes](./Mistakes.md)
+- Course original: [Data Engineer Associate](../certifications/data-engineer-associate/README.md)
 
-| Section | Study note |
-|---|---|
-| 01–02 Spark SQL and DataFrames | [SQL, DataFrame, CTE/CTAS, windows and actions](./03-01-02-sql-dataframes.md) |
-| 03 Joins and Aggregations | [Joins, broadcast vs sort-merge, deduplication](./03-03-joins-aggregations.md) |
-| 04 Advanced Transformations | [Overview/index](./03-advanced-transformations.md) |
-| 04A Collections and Pivot | [Arrays, maps, structs, explode, pivot](./03-04-collections-and-pivot.md) |
-| 04B NULL, JSON and UDFs | [NULL/NaN, forward fill, JSON, cache, UDFs](./03-04-null-json-udf.md) |
-| 05 Cleaning and Quality | [Bronze to Silver, profiling, expectations, quarantine](./03-05-cleaning-quality.md) |
-| 06 Gold Layer Objects | [Table/View/MV/ST, CDC, AUTO CDC, dbt](./03-06-gold-cdc-dbt.md) |
-| 07 Spark Tuning | [JVM/RDD/GC, partitions, joins, AQE, salting, Spark UI](./03-07-spark-tuning-aqe.md) |
-
-### Domain 6 — Troubleshooting, Monitoring and Optimization (first pass complete)
-
-| Section | Study note |
-|---|---|
-| 01–05 Job monitoring, Spark UI, Delta optimization, liquid clustering, predictive optimization and compute troubleshooting | [Domain 6 complete notes, Q&A and exam traps](./06-troubleshooting-monitoring-optimization.md) |
-
-### Other references
-
-- [Glossary](Glossary.md) — Terms and concise explanations.
-- [Synapse vs Databricks](Synapse-vs-Databricks.md) — Concepts and migration comparisons.
-- [Mistakes](Mistakes.md) — Practice-question corrections and review points.
-
-## Workflow
-
-1. Read the source material in `certifications/data-engineer-associate/`.
-2. Add annotations while reading; export useful annotations as Markdown.
-3. Consolidate verified concepts into these notes without copying entire chapters.
-4. Keep company information, credentials, and API keys out of this repository.
+## Note organization
+Each chapter groups concepts rather than splitting by original lesson number. Preserve English exam terminology, explanations, runnable-ish examples, distinctions and common pitfalls. Source course chapters in `certifications/` are untouched.
