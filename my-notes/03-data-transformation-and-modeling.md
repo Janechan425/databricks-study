@@ -743,3 +743,53 @@ AS SELECT * FROM STREAM(main.bronze.orders);
 ```
 
 **Mock Exam 1 classification:** Q18 was a missed question. Q16, Q17, Q22 and the type/function questions were *clarification requests*, not errors.
+
+## Mock Exam 2 — Q17/Q18 and related SQL functions
+
+### Exact vs approximate distinct count (Q17)
+
+| Function | Meaning | Duplicates | NULL |
+|---|---|---|---|
+| `COUNT(DISTINCT col)` | **Exact** count of unique non-NULL values | Counted once | Excluded |
+| `COUNT(col)` | Count of non-NULL rows | Counted repeatedly | Excluded |
+| `SUM(DISTINCT col)` | Sum of unique numeric values, **not a count** | Summed once | Excluded |
+| `APPROX_COUNT_DISTINCT(col)` | **Approximate** number of unique values using HyperLogLog++ | Estimated distinct cardinality | Excluded |
+
+Example: values `[10, 10, 20, NULL]` → `COUNT(DISTINCT)=2`, `COUNT(col)=3`, `SUM(DISTINCT)=30`; `APPROX_COUNT_DISTINCT` estimates 2 (not guaranteed to equal the exact answer).
+
+**Question-quality note:** Mock Exam 2 Q17 says “millions of rows” but does not explicitly demand an **exact** answer. Its intended choice is `COUNT(DISTINCT)`, but `APPROX_COUNT_DISTINCT` can also be reasonable if estimates are acceptable. In exam wording, choose exact by default unless **estimate / approximate / acceptable error / memory efficiency** is stated.
+
+### collect_list vs collect_set; ordering is NOT guaranteed (Q18)
+
+| Function | Output | Duplicates | Order |
+|---|---|---|---|
+| `collect_list(col)` | ARRAY of values per group | **Preserved** | **Not guaranteed**, especially after shuffle |
+| `collect_set(col)` | ARRAY of distinct values per group | **Removed** | **Not guaranteed** |
+
+Input rows `Apple, Banana, Apple` → possible `collect_list = [Apple, Banana, Apple]`; possible `collect_set = [Apple, Banana]`. These examples show membership, **not a promised order**.
+
+```sql
+SELECT
+  customer_id,
+  sort_array(collect_list(product)) AS all_products_sorted,
+  sort_array(collect_set(product)) AS unique_products_sorted
+FROM orders
+GROUP BY customer_id;
+```
+
+**Correction to Mock Exam 2 explanation:** “`collect_list` preserves order” is inaccurate as a general guarantee. Use explicit sorting when order matters. `collect_set` works with strings and other supported types, not only numeric values.
+
+### Array function distinctions (related clarification)
+
+- `flatten(array_of_arrays)`: concatenate one level of nested arrays, e.g. `[[1,2],[3,4]] → [1,2,3,4]`; stays **one row**.
+- `explode(array)`: emit **one row per outer element**, e.g. `[[1,2],[3,4]] → two rows`, each holding an inner array.
+- `array_join(array, ',')`: join a flat array into a **STRING**, e.g. `['A','B'] → 'A,B'`.
+- `transform(array, x -> expression)`: apply a lambda to each element, returning an array; it does not inherently flatten or explode. Output element types/depth may change depending on the lambda.
+
+### CAST vs TRY_CAST; Schema Evolution vs write mode (related clarification)
+
+- `CAST('bad' AS INT)` errors with ANSI mode enabled; `TRY_CAST('bad' AS INT)` returns `NULL` for supported conversions that fail due to malformed values/overflow. Unsupported type combinations can still error.
+- `.mode('append')` adds data; `.mode('overwrite')` replaces data in the write scope; neither setting by itself means “replace the table schema.”
+- `.option('mergeSchema','true')` enables compatible **Delta target schema evolution**, typically adding new columns; it is not `MERGE INTO` (row-level upsert).
+- `.option('overwriteSchema','true')` with overwrite requests replacement of the table schema.
+- Auto Loader's `cloudFiles.schemaEvolutionMode` controls **source-file schema discovery** on the read side; Delta `mergeSchema` controls compatible schema changes on the write side. They are separate settings.
