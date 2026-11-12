@@ -109,3 +109,42 @@ databricks bundle deploy -t prod
 - Security: use GitHub Actions secrets/OIDC or supported secure identities, not embedded credentials.
 - **IaaS** = Infrastructure as a Service; **IaC** = Infrastructure as Code. Don't confuse them.
 - **precedence** = priority/order of resolution; **synergy** is grammatical as a noun but in technical diagrams prefer **work together / integrate / orchestrate**.
+
+## Mock Exam 2 — Q31: Bundle target vs variable precedence
+
+**Target = where/how the Bundle deploys; Variable = a configurable value used inside that deployment.** They are separate decisions.
+
+- `databricks bundle deploy -t prod` selects the **prod target**; it does **not** mean every `${var.*}` resolves to `prod`.
+- `databricks bundle deploy --var catalog=prod_catalog` without `-t` still selects the target marked `default: true` (if one is configured), while setting the **catalog variable** to `prod_catalog`.
+- Variable precedence, **highest to lowest**: CLI `--var` → environment `BUNDLE_VAR_<name>` → `.databricks/bundle/<target>/variable-overrides.json` → target-level `variables` → top-level `default`.
+
+```yaml
+variables:
+  catalog:
+    default: dev
+targets:
+  dev:
+    default: true
+    variables:
+      catalog: dev_catalog
+  prod:
+    variables:
+      catalog: prod_catalog
+```
+
+```bash
+export BUNDLE_VAR_catalog=staging
+databricks bundle deploy -t prod
+# Selected target = prod; resolved ${var.catalog} = staging
+
+databricks bundle deploy -t prod --var catalog=qa
+# Selected target = prod; resolved ${var.catalog} = qa
+```
+
+**Why Q31 answer A:** No CLI `--var` was passed, so `BUNDLE_VAR_catalog=staging` overrides the prod target's `catalog=prod`. Multiple definitions are valid and resolved by precedence.
+
+**Q32 connection:** Without `-t`, `default: true` selects the target; `--var` does **not** select a target. CI should explicitly pass `-t <target>` and validate resolved configuration to avoid mixing prod deployment with staging data.
+
+### Q34 connection: Stable production notebook deployment
+
+During feature-branch development, the job YAML should already reference the notebook **by relative source path**, e.g. `notebook_path: ../notebooks/transform.py` from `resources/job.yml`. Git merging into `main` only merges source/configuration; it does **not** rewrite paths or allocate Databricks notebook IDs. At `databricks bundle deploy -t prod`, the Bundle uploads files and resolves job references to the **Bundle-managed workspace path**. CI deploys the merged main branch using a service principal, not an engineer's personal Git folder. Switching a personal Git folder's branch therefore cannot delete the production notebook the Job uses. Existing manually configured jobs are not automatically converted to relative paths; migrate their definitions into the Bundle first.
