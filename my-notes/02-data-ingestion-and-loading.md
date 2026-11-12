@@ -389,3 +389,33 @@ SELECT raw:line_items[0].sku FROM bronze_orders;  -- JSON path: first SKU
 If parsed as `STRUCT<line_items: ARRAY<STRUCT<sku: STRING>>>`, use a struct field expression such as `parsed.line_items[0].sku`. **Colon for JSON path on a JSON string; dot for an actual STRUCT field.** Array indices start at zero. `STRUCT`, `ARRAY` and `MAP` are Apache Spark SQL complex types, not Databricks-only types.
 
 **Mock Exam 1 classification:** Q12 was a *missed question*; the other items in this section were *questions raised during review*, not additional mistakes.
+
+## Mock Exam 2 — Q8/Q9: Streaming watermark and file discovery
+
+### Event time, processing time, and watermarks (Q8)
+
+- **Event time**: timestamp embedded in the record, when the business event occurred.
+- **Processing time**: when Spark processes the record. A record with event time 10:05 may arrive at 10:18.
+- **Watermark**: `withWatermark("event_time", "10 minutes")` declares a threshold for late event-time data in **stateful** streaming operations (e.g., windowed aggregation). Roughly, the watermark advances with the maximum observed event time minus 10 minutes; it is **not** current wall-clock time minus 10 minutes.
+- **Not a buffer**: Spark can aggregate records as they arrive; it does not hold all data for exactly 10 minutes before writing. Watermarks help bound state and eventually finalize/evict old windows. Exact late-record handling depends on micro-batch progress and output mode.
+- **Not Delta retention**: watermark does not delete old rows from the Delta destination table; Delta retention and `VACUUM` are separate concerns.
+
+Example: a 10:00–10:10 event-time window receives a 10:05 event at processing time 10:06. It can be aggregated immediately. A delayed 10:07 event may still update the window while its state is retained. Once the watermark has advanced past the window end and the state is evicted, later arrivals for that window may be dropped.
+
+**Exam trap:** `10 minutes` means an allowed lateness threshold relative to observed **event time**, not a fixed 10-minute wait, not 10-minute history filtering, and not automatic deletion of Delta rows. The phrase “10 minutes after the window closes” is a simplification, not a wall-clock guarantee.
+
+### Auto Loader directory listing vs file events (Q9)
+
+Separate **file discovery** (finding which files are new) from **file processing** (reading, parsing, writing them).
+
+| Option | What it changes | Does it fix repeated large directory listing? |
+|---|---|---|
+| Directory listing | Discover files by listing cloud storage paths | No; expensive at millions of files |
+| **File events / file notification** on a UC external location | Discover new files via notifications, avoiding repeated full listings in steady state | **Yes; recommended for most workloads** |
+| `cloudFiles.maxFilesPerTrigger` | Maximum files processed per micro-batch | No; not a discovery optimization |
+| `cloudFiles.useIncrementalListing` | Legacy incremental listing | Deprecated; not recommended |
+| Scheduled `COPY INTO` | Batch ingestion of files | Not the preferred fix for massive continuous feeds |
+
+File events do **not** skip reading the new files; they avoid repeatedly scanning the directory **to discover** those files. Initial/recovery listing may still occur. The stream checkpoint tracks progress across restarts. Do not confuse file notification with a Lakeflow Job's file-arrival trigger.
+
+**Self-check:** If 1,000,000 files already exist and 5 new files arrive, event notifications tell Auto Loader about the 5 new paths without requiring a full repeated listing of the existing million files.
