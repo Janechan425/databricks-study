@@ -74,3 +74,24 @@ if n > 0:
 
 ## Common English exam terms
 `flaky` = intermittently unreliable; `dependency` = prerequisite task; `trigger` = run-start condition; `retry interval` = pause between attempts; `timeout` = limit per attempt; `upstream/downstream` = predecessor/successor in DAG; `excluded` = skipped by branching; `concurrency` = simultaneous executions.
+
+## Mock Exam 1 — Concept Clarifications (Q23/Q24; not wrong answers)
+
+**Separate four concerns:**
+
+1. **Lakeflow Jobs** = orchestration (DAG, tasks, retries, dependencies).
+2. **Trigger** = when a job starts (scheduled, file arrival, continuous, table update).
+3. **Compute** = where work executes (usually serverless Jobs compute for supported tasks; classic Jobs compute for specific requirements).
+4. **Ingestion** = how data arrives/read (Auto Loader for files, JDBC for databases, managed connectors for supported systems).
+
+| Requirement | Recommended pattern |
+|---|---|
+| Interactive EDA / notebook exploration | Interactive/all-purpose or suitable serverless notebook compute |
+| Hourly batch processing | Scheduled Lakeflow Job + task compute |
+| Irregular file arrival without empty runs | File arrival trigger + Auto Loader in task + serverless Jobs compute |
+| Continuously processing new events with low latency | Continuous processing/pipeline pattern (where supported) |
+| Read available files and terminate the stream | `trigger(availableNow=True)` inside streaming task |
+
+**Question from Q23:** EDA does not itself specify a persistent destination. Write output to a Delta table or UC Volume if it needs to survive an interactive session. Production code should be made repeatable, then scheduled as a Job or Pipeline task.
+
+**Question from Q24:** Auto Loader and File Arrival Trigger are **complementary**, not competing: Trigger launches a Job on arrivals; Auto Loader deduplicates and ingests new files using checkpoints. Avoid confusing a Job's **continuous trigger** with Spark's **Structured Streaming trigger**.
