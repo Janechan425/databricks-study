@@ -85,3 +85,22 @@ Distinguish this from `delta.deletedFileRetentionDuration`, which controls reten
 - **DELETE** is a logical table change; **VACUUM** can physically remove obsolete files.
 - **Log retention** and **deleted-file retention** are different settings.
 - **Time travel** needs both sufficient log history and available data files.
+
+## Mock Exam 1 — Concept Clarifications (not missed questions; Q2/Q23)
+
+### Compute selection: where a task runs vs how it is scheduled
+
+| Concept | Responsibility | Typical use |
+|---|---|---|
+| Lakeflow Jobs | Orchestration: task DAG, triggers, dependencies, retries | Scheduled production workflows |
+| Serverless Jobs compute | Compute for supported job tasks; platform manages capacity | Preferred default for many production jobs |
+| Classic Jobs compute | Job-scoped configured compute | When specific cluster/runtime settings are required |
+| All-purpose / interactive compute | Interactive notebooks and exploratory data analysis (EDA) | Development, exploration |
+| SQL warehouse (including serverless) | SQL execution and BI | SQL queries / SQL tasks |
+| Serverless pipeline compute | Runs Lakeflow Spark Declarative Pipelines | Streaming tables and materialized views |
+
+A **Scheduled trigger** belongs to a Job; **Serverless Jobs compute** executes its tasks. A Job can also invoke a **Pipeline task**. Never confuse *trigger* (when to start), *compute* (where to execute), and *ingestion* (how new data is read).
+
+**EDA hand-off example:** explore raw data interactively in a notebook; persist reusable output to a Delta table or governed volume; package stable transformation logic as a Job notebook or Pipeline; schedule it with Lakeflow Jobs.
+
+**Exam clue:** interactive EDA → interactive/all-purpose compute; automated Notebook ETL → Lakeflow Jobs + serverless Jobs compute where supported. Modern serverless options mean classic Job clusters are not always the first choice.
