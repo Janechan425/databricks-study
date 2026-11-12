@@ -10,7 +10,7 @@ Personal, concept-grouped notes for Databricks Certified Data Engineer Associate
 | 4 — Working with Lakeflow Jobs | [04 — Jobs, triggers, task values and control flow](./04-working-with-lakeflow-jobs.md) | New chapter synthesis |
 | 5 — Implementing CI/CD | [05 — Git Folders, rebase, bundles, dbt, GitHub Actions](./05-implementing-cicd.md) | New chapter synthesis |
 | 6 — Troubleshooting, Monitoring and Optimization | [06 — Monitoring and optimization](./06-troubleshooting-monitoring-optimization.md) | Existing consolidated note |
-| 7 — Governance and Security | In progress (not yet consolidated) | Studying |
+| 7 — Governance and Security | [07 — Unity Catalog, permissions, row filters, masks, ABAC and sharing](./07-governance-and-security.md) | Consolidated, all 5 source sections + Q&A |
 
 ## References
 - [Glossary](./Glossary.md)
