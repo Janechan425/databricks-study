@@ -194,3 +194,47 @@ See [Data Ingestion Follow-up Q&A](./Data-Ingestion-Follow-up-QA.md) for example
 | Executor OOM | Executor out-of-memory, often from large partitions, skew or cached data. | [Notes](./06-troubleshooting-monitoring-optimization.md) |
 | Python Worker OOM | Python worker memory exhaustion, often from oversized UDF batches/groups. | [Notes](./06-troubleshooting-monitoring-optimization.md) |
 
+
+## Domain 7 — Governance and Security
+
+| Term | Definition | Source |
+| --- | --- | --- |
+| Metastore | Regional root governance container for UC catalogs; not part of the three-level table name. | [Notes](./07-governance-and-security.md) |
+| Fully qualified name | Three-level UC object reference: `catalog.schema.object`. | [Notes](./07-governance-and-security.md) |
+| Securable object | UC object on which privileges can be granted, e.g. catalog, schema, table, view, volume or external location. | [UC](https://docs.databricks.com/aws/en/data-governance/unity-catalog/) |
+| Storage credential | UC object representing a cloud access identity used with external locations. | [UC](https://docs.databricks.com/aws/en/data-governance/unity-catalog/) |
+| Managed table | UC-managed data storage and lifecycle; DROP allows a configured recovery window before data cleanup. | [Tables](https://docs.databricks.com/aws/en/tables/managed) |
+| External table | UC-registered table using a designated external storage path; DROP removes metadata, not cloud files. | [Tables](https://docs.databricks.com/aws/en/tables/external) |
+| SET MANAGED | Supported Delta table conversion from external to UC-managed storage. | [Convert](https://docs.databricks.com/aws/en/tables/convert-external-managed) |
+| UNSET MANAGED | Conversion rollback within its supported window (14 days per study source). | [Convert](https://docs.databricks.com/aws/en/tables/convert-external-managed) |
+| UNDROP TABLE | Recover a dropped UC managed table inside its recovery period (7 days default in study source). | [Notes](./07-governance-and-security.md) |
+| Table property (TBLPROPERTIES) | Table-level key/value metadata; custom keys are descriptive, system Delta keys can change behavior. | [Notes](./07-governance-and-security.md) |
+| Table comment / column comment | Descriptive table/column metadata visible in UC; not row data or transformation execution. | [Notes](./07-governance-and-security.md) |
+| TSD | Common abbreviation for Technical Specification Document or Technical Solution Design; company-specific business/technical logic specification. | [Notes](./07-governance-and-security.md) |
+| dbt persist_docs | dbt configuration to publish supported model/column descriptions as database relation/column comments. | [Notes](./07-governance-and-security.md) |
+| Principal | User, group or service principal receiving UC privileges. | [Privileges](https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/) |
+| Service principal | Non-human identity for running automation, CI/CD and production jobs. | [Privileges](https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/) |
+| Least privilege | Grant only the permissions necessary for a task at the narrowest practical scope. | [Notes](./07-governance-and-security.md) |
+| Privilege inheritance | Catalog/schema grants also cover eligible current and future descendant objects; USE does not turn into SELECT. | [Privileges](https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/) |
+| USE CATALOG | Required access gate to interact with objects under a catalog; not permission to read table rows. | [Privileges](https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/) |
+| USE SCHEMA | Required access gate to interact with schema objects; not SELECT. | [Privileges](https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/) |
+| SELECT | Data-reading privilege; usually needs USE CATALOG and USE SCHEMA as well. | [Privileges](https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/) |
+| BROWSE | Discover permissible object names/descriptions without reading rows or requiring parent USE privileges. | [Privileges](https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/) |
+| MODIFY | Privilege to insert/update/delete table data, subject to operation-specific requirements. | [Privileges](https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/) |
+| MANAGE | Administrative privilege for supported object permissions/ownership operations; excluded from ALL PRIVILEGES. | [Privileges](https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/) |
+| GRANT / REVOKE | Add/remove explicit privileges; REVOKE is not a persistent deny override and inherited/group grants may remain. | [Notes](./07-governance-and-security.md) |
+| DENY (classic) | Legacy Hive-metastore privilege-blocking SQL; not supported as classic DENY on Unity Catalog. | [DENY](https://docs.databricks.com/aws/en/sql/language-manual/security-deny) |
+| Effective privileges | Permissions remaining after considering directly granted, group and inherited privileges. | [Notes](./07-governance-and-security.md) |
+| Row filter | Table-attached SQL UDF returning BOOLEAN per row; TRUE rows visible, FALSE/NULL rows filtered. | [Filters](https://docs.databricks.com/aws/en/tables/row-and-column-filters) |
+| Column mask | Table-attached SQL UDF returning a value compatible with masked column type, conditional on identity. | [Masks](https://docs.databricks.com/aws/en/tables/row-and-column-filters) |
+| is_account_group_member() | SQL function checking whether the querying principal belongs to a specified account group. | [Notes](./07-governance-and-security.md) |
+| Dynamic view | SQL view that dynamically masks/filters or transforms results based on query context/identity. | [Notes](./07-governance-and-security.md) |
+| Governed tag | Centrally controlled object/column classification metadata with governed assignment and allowed values. | [ABAC](https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/) |
+| Tag key / tag value | Metadata classification name/value, e.g. `pii=email`; neither is a row value or column name. | [ABAC](https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/) |
+| ABAC | Attribute-Based Access Control: applies centrally defined masks/filters using attributes such as governed tags. | [ABAC](https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/) |
+| has_tag() / has_tag_value() | ABAC tag predicates for tag presence versus a specified key/value. | [ABAC](https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/) |
+| Provider / Share / Recipient / Consumer | Provider exposes datasets in a share; recipient is authorized identity; consumer reads the shared data. | [Sharing](https://docs.databricks.com/aws/en/delta-sharing/) |
+| OpenSharing | Open cross-workspace/organization data-sharing mechanism, formerly called Delta Sharing in course materials. | [Sharing](https://docs.databricks.com/aws/en/delta-sharing/) |
+| REST | Representational State Transfer; architectural style for APIs, often implemented over HTTP. | [Notes](./07-governance-and-security.md) |
+| API | Application Programming Interface; wider concept that includes REST APIs, JDBC interfaces and other integration styles. | [Notes](./07-governance-and-security.md) |
+| Materialized view vs view | MV persists query results and refreshes them; ordinary view stores SQL definition without materialized result storage. | [Notes](./07-governance-and-security.md) |
