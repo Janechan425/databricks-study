@@ -302,3 +302,90 @@ Output:
 - [Spark JDBC data source](https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html)
 - [Databricks Utilities](https://docs.databricks.com/aws/en/dev-tools/databricks-utils)
 - [PySpark explode](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.explode.html)
+
+## Mock Exam 1 — Concept Clarifications (not missed questions; Q5/Q8/Q9/Q12/Q24)
+
+### Auto Loader vs Job triggers vs compute
+
+- **Auto Loader** = incremental cloud-file discovery/ingestion, via `spark.readStream.format("cloudFiles")`.
+- **Scheduled trigger** = run a job at a specified time; possible empty runs.
+- **File arrival trigger** = start a job when qualifying files arrive in a monitored location; often avoids empty scheduled runs.
+- **Continuous job trigger** = keep the job running for near-continuous processing; not a synonym for Auto Loader.
+- **`availableNow=True`** = Structured Streaming processes currently available input and then terminates; useful inside a triggered job.
+- **Serverless Jobs compute** = resources on which the task runs, not an ingestion method.
+
+Example flow: *files arrive in a UC Volume → file arrival trigger starts a Lakeflow Job → a notebook on serverless Jobs compute uses Auto Loader → checkpoint identifies unprocessed input → Bronze Delta table.*
+
+Important Auto Loader options:
+
+| Option | Meaning |
+|---|---|
+| `format("cloudFiles")` | Enable Auto Loader |
+| `cloudFiles.format` | Underlying files: json/csv/parquet/etc. |
+| `cloudFiles.schemaLocation` | Store inferred schema and evolution metadata |
+| `checkpointLocation` (writer) | Track streaming progress/state for recovery |
+| `cloudFiles.schemaEvolutionMode` | Choose `addNewColumns`, `rescue`, `failOnNewColumns`, `none` |
+| `cloudFiles.maxFilesPerTrigger` | Cap number of files in each micro-batch |
+| `cloudFiles.maxBytesPerTrigger` | Approximate data-volume cap per batch |
+| `cloudFiles.useManagedFileEvents` | Use managed file-event discovery when configured/supported |
+
+```python
+source = "/Volumes/main/raw/landing/orders"
+schema_dir = "/Volumes/main/ops/state/orders-schema"
+checkpoint = "/Volumes/main/ops/state/orders-checkpoint"
+(
+    spark.readStream.format("cloudFiles")
+    .option("cloudFiles.format", "json")
+    .option("cloudFiles.schemaLocation", schema_dir)
+    .option("cloudFiles.schemaEvolutionMode", "rescue")
+    .option("cloudFiles.maxFilesPerTrigger", 100)
+    .load(source)
+    .writeStream
+    .option("checkpointLocation", checkpoint)
+    .trigger(availableNow=True)
+    .toTable("main.bronze.orders")
+)
+```
+Here `rescue` keeps unexpected fields in `_rescued_data`; it does **not** process row-level CDC. Schema evolution and data-change propagation are different questions.
+
+### JDBC partitioning for parallel PostgreSQL reads
+
+```python
+orders = (spark.read.format("jdbc")
+    .option("url", jdbc_url)
+    .option("dbtable", "public.orders")
+    .option("user", username)
+    .option("password", password)
+    .option("partitionColumn", "order_id")
+    .option("lowerBound", "1")
+    .option("upperBound", "1000000")
+    .option("numPartitions", "4")
+    .load())
+```
+
+- **`partitionColumn`** = source field used to split JDBC reads (supported numeric/date/timestamp types).
+- **`lowerBound` / `upperBound`** = partition stride calculation bounds, **not a WHERE filter for the full dataset**.
+- **`numPartitions`** = parallel JDBC partitions / approximate maximum parallel connections.
+- `.repartition(4)` **after** `.load()` cannot parallelize the preceding single JDBC read.
+- JDBC source partitions ≠ Spark shuffle partitions.
+
+### Delta streaming UPDATE/DELETE vs schema evolution (Q9)
+
+A default append-only Delta **streaming source read** can fail when upstream Delta transactions rewrite/update/delete existing records.
+
+- If downstream **does not need** updates: `spark.readStream.option("skipChangeCommits", "true").table("main.bronze.customers")`; changed commits are skipped, not replayed as new values.
+- If downstream **must apply** updates/deletes: use **Change Data Feed (CDF)** / CDC-aware processing, or an `AUTO CDC` flow into a target streaming table with keys and sequencing.
+- **Schema evolution** (`rescue`, `addNewColumns`) concerns changing **columns/fields**; **CDC** concerns updating **existing rows**.
+- A target streaming table is *not categorically immutable*: managed CDC processing can maintain current-state data (SCD Type 1).
+
+### JSON STRING vs STRUCT/ARRAY (Q12 clarification)
+
+For a column `raw STRING` containing `{"line_items":[{"sku":"A1"},{"sku":"B7"}]}`:
+
+```sql
+SELECT raw:line_items[0].sku FROM bronze_orders;  -- JSON path: first SKU
+```
+
+If parsed as `STRUCT<line_items: ARRAY<STRUCT<sku: STRING>>>`, use a struct field expression such as `parsed.line_items[0].sku`. **Colon for JSON path on a JSON string; dot for an actual STRUCT field.** Array indices start at zero. `STRUCT`, `ARRAY` and `MAP` are Apache Spark SQL complex types, not Databricks-only types.
+
+**Mock Exam 1 classification:** Q12 was a *missed question*; the other items in this section were *questions raised during review*, not additional mistakes.
