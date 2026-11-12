@@ -666,3 +666,80 @@ For skewed joins, salting requires **both sides to match on (key, salt)**, often
 
 ## Glossary mini-review
 `propagation` = spreading information through a plan; `honour a hint` = respect the optimization hint; `spill` = intermediate data written out when it cannot remain in memory; `skew` = uneven data/task distribution.
+
+## Mock Exam 1 — Concept Clarifications (questions raised, not necessarily mistakes)
+
+### SQL UNION vs PySpark union (Q18 — missed)
+
+| API | Duplicate rows | Column matching |
+|---|---|---|
+| SQL `UNION` | Removes duplicates | By ordinal position |
+| SQL `UNION ALL` | Retains duplicates | By ordinal position |
+| PySpark `df1.union(df2)` | **Retains** duplicates | By ordinal position |
+| PySpark `df1.unionByName(df2)` | **Retains** duplicates | By column name |
+| PySpark `df1.union(df2).distinct()` | Removes duplicates | By ordinal position |
+
+`union()` concatenates rows **vertically**; `join()` combines datasets **horizontally** according to join conditions. Python DataFrame `union()` corresponds to SQL `UNION ALL`, **not** SQL `UNION`.
+
+### Complex Spark SQL types: ARRAY vs MAP vs STRUCT
+
+| Type | Description | Example | Access |
+|---|---|---|---|
+| ARRAY | Ordered elements of a compatible type | `[10,20,30]` | `items[0]` |
+| MAP | Key–value dictionary; keys and values each have their own defined type | `map('CA',100,'US',200)` | `sales['CA']` |
+| STRUCT | Record with named fields, potentially of different types | `named_struct('city','Toronto','zip','M5V')` | `address.city` |
+
+These are **Apache Spark SQL** types (not Databricks-exclusive). JSON text in STRING is *not automatically a STRUCT*; use JSON path `raw:items[0].sku` or parse it using `from_json(raw, schema)`.
+
+### flatten vs explode vs struct expansion
+
+```python
+from pyspark.sql import functions as F
+df = spark.createDataFrame([([[1, 2], [3, 4]],)], ["nested"])
+df.select(F.flatten("nested")).show(truncate=False)  # [1,2,3,4] in ONE row
+df.select(F.explode(F.flatten("nested")).alias("n")).show()  # FOUR rows
+```
+
+- `flatten`: removes **one level** of array nesting (`ARRAY<ARRAY<T>>` → `ARRAY<T>`); does not create new rows.
+- `explode`: creates one row per element of an array/map; other columns are replicated.
+- `explode_outer`: preserves a NULL output row for null/empty input.
+- `select("address.*")`: expands STRUCT fields into **columns**.
+- `array_join`: combines array elements into one string.
+
+### Python UDF (User-Defined Function) (Q16)
+
+```python
+from pyspark.sql import functions as F
+from pyspark.sql.types import StringType
+
+@F.udf(StringType())
+def normalize_name(name):
+    return name.strip().lower().replace(" ", "_") if name else None
+
+result = df.withColumn("name_clean", normalize_name(F.col("name")))
+```
+
+- Spark built-ins (`F.lower`, `F.trim`, etc.) are generally preferred when equivalent.
+- A **Python UDF** enables custom per-row Python logic within distributed Spark execution; declare return type and ensure dependencies are available on compute.
+- **Pandas UDF** / Arrow processing can vectorize supported operations, often reducing overhead.
+- Avoid `toPandas()` on very large datasets; it collects data to the driver.
+- Ordinary `withColumn` needs a Spark Column expression, not an arbitrary Python lambda.
+
+### Lakeflow Declarative Pipelines / DLT Expectations (Q22)
+
+**Delta Live Tables (DLT)** is the legacy name for capabilities now described under **Lakeflow Spark Declarative Pipelines**. A Pipeline defines streaming tables, materialized views, flows and data-quality expectations; **Lakeflow Jobs** orchestrates when tasks and pipelines run.
+
+| Expectation policy | Invalid rows | Update behavior |
+|---|---|---|
+| `EXPECT (...)` (default **WARN**) | Kept | Continues, records metrics |
+| `EXPECT (...) ON VIOLATION DROP ROW` | Dropped | Continues with valid rows |
+| `EXPECT (...) ON VIOLATION FAIL UPDATE` | Update fails | Requires remediation/retry |
+
+```sql
+CREATE OR REFRESH STREAMING TABLE orders_clean (
+  CONSTRAINT positive_amount EXPECT (amount > 0) ON VIOLATION DROP ROW
+)
+AS SELECT * FROM STREAM(main.bronze.orders);
+```
+
+**Mock Exam 1 classification:** Q18 was a missed question. Q16, Q17, Q22 and the type/function questions were *clarification requests*, not errors.
