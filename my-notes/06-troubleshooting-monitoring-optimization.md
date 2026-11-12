@@ -223,3 +223,31 @@ summary = (spark.table("main.silver.events")
 - [Predictive Optimization](https://docs.databricks.com/aws/en/optimizations/predictive-optimization)
 - [Library management](https://docs.databricks.com/aws/en/libraries/)
 - [Compute termination codes](https://docs.databricks.com/aws/en/compute/troubleshooting/cluster-error-codes)
+
+## Mock Exam 1 — Concept Clarification: Broadcast Join (Q35; answered correctly)
+
+**Broadcast Hash Join** duplicates a **small** dimension table on executors to avoid shuffling the large fact table for that join.
+
+```sql
+-- orders: ~10M rows; customers: ~1K rows
+SELECT /*+ BROADCAST(c) */
+    o.order_id, o.amount, c.region
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id;
+```
+
+PySpark equivalent:
+
+```python
+from pyspark.sql.functions import broadcast
+result = orders.join(broadcast(customers), on="customer_id", how="inner")
+```
+
+View the physical plan with `EXPLAIN FORMATTED SELECT ...` or `result.explain("formatted")`; look for `BroadcastHashJoin`.
+
+**Exam distinctions:** 
+- Broadcast ≠ repartitioning both big tables for a Shuffle Join.
+- Raising `spark.sql.shuffle.partitions` changes the number/size of shuffle partitions, not the underlying total join volume.
+- `CROSS JOIN` is not a performance substitute.
+- A Broadcast Hint is safe only if a side is small enough to broadcast; the Mock Exam Q35 wording mentions three large tables but assumes some *small dimension* tables exist. Check input sizes/stats before applying the hint.
+- This is Spark SQL/PySpark, **not C++ syntax**.
