@@ -336,3 +336,20 @@ A materialized view may use Delta-backed storage but is a managed refreshable qu
 - [Row filters and column masks](https://docs.databricks.com/aws/en/tables/row-and-column-filters)
 - [ABAC](https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/)
 - [Delta Sharing](https://docs.databricks.com/aws/en/delta-sharing/)
+
+## Mock Exam 1 — Concept Clarification: SHOW GRANTS and effective permissions (Q43; answered correctly)
+
+**Authentication** = verifies identity; **Authorization** = determines permissions. **GRANT** adds permissions; **REVOKE** removes a grant; **SHOW GRANTS** inspects grants.
+
+```sql
+SHOW GRANTS ON TABLE main.silver.orders;
+SHOW GRANTS `user@example.com` ON TABLE main.silver.orders;
+SHOW GRANTS ON SCHEMA main.silver;
+SHOW GRANTS ON CATALOG main;
+```
+
+Minimum read path for a specific table: **USE CATALOG + USE SCHEMA + SELECT**. Investigating a user's *effective access* also requires considering group membership, inherited privileges from schema/catalog and ownership. A direct table grant listing alone does not always tell the whole story.
+
+**Classic SQL DENY SELECT is not a general UC alternative to REVOKE.** If a user still receives SELECT through a parent object or another group, revoking just the direct table grant will not necessarily block access. For per-row/per-column restrictions, use row filters / column masks or relevant governed policies.
+
+**Not the same:** `SHOW SHARES` concerns Delta Sharing shares; it is not the normal command for table privileges.
